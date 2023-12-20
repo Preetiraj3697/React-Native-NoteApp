@@ -1,14 +1,19 @@
 import { StatusBar } from 'expo-status-bar'
-import { StyleSheet, Text, View } from 'react-native'
+import { FlatList, Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native'
 import colors from '../misc/colors'
 import { useEffect, useState } from 'react'
 import SearchBar from '../SearchBar';
 import RoundIConBtn from '../RoundIConBtn';
 import NoteInputModal from '../NoteInputModal';
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import Note from '../Note';
 
-export default function NoteScreen({user}) {
+
+
+export default function NoteScreen({user, navigation}) {
     const [greet,setGreet] = useState('Evening');
     const [modalVisible, setModalVisible] =useState(false);
+    
     const findGreet = () => {
         const hrs = new Date().getHours();
         console.log(hrs);
@@ -17,25 +22,42 @@ export default function NoteScreen({user}) {
         setGreet("Evening");
     }
     useEffect(()=>{
-        findGreet();
-    },[]);
+      findGreet();
+      
+  },[]);
     
-    const hanldeOnSubmit = (title, desc) => {
-    console.log(title,desc)
+    const hanldeOnSubmit = async (title, desc) => {
+     const time = new Date().getTime();
+     const note = {id:Date.now(),title,desc, time};
+     const updatedNotes = [...notes, note];
+     setNotes(updatedNotes);
+     await AsyncStorage.setItem("notes",JSON.stringify(updatedNotes));
     }
+    const openNote = note => {
+      navigation.navigate('NoteDetails', { note });
+    };
   return (
     <>
     <StatusBar barStyle="dark-content" backgroundColor={colors.LIGHT}/>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
     <View style={styles.container}>
       <Text style={styles.header}>{`Good ${greet} ${user.name}`}</Text>
-      <SearchBar containerStyle={{marginVertical:15}} />
-      <View  style={[
-                StyleSheet.absoluteFillObject,
-                styles.emptyHeaderContainer,
-              ]}>
-        <Text style={styles.emptyHeader}>Add Notes</Text>
-      </View>
+      {notes.length? <SearchBar containerStyle={{marginVertical:15}} /> : null}
+      <FlatList data={notes} 
+      numColumns={2}
+      columnWrapperStyle={{justifyContent:'space-between', marginBottom:15}}
+      keyExtractor={item => item.id.toString()}
+      renderItem={({item}) => <Note item={item} onPress={() => openNote(item)}/> } />
+      {!notes.length ? (
+        <View  style={[
+          StyleSheet.absoluteFillObject,
+          styles.emptyHeaderContainer,
+        ]}>
+  <Text style={styles.emptyHeader}>Add Notes</Text>
+</View>
+      ): null}
     </View>
+    </TouchableWithoutFeedback>
     <RoundIConBtn onPress={() => setModalVisible(true)} antIconName="plus" style={styles.addBtn} />
     <NoteInputModal visible={modalVisible} onClose={() => setModalVisible(false)} onSubmit={hanldeOnSubmit}/>
     </>
