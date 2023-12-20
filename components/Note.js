@@ -1,5 +1,4 @@
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import React from 'react'
+import { Dimensions, StyleSheet, Text, TouchableOpacity} from 'react-native'
 import colors from './misc/colors';
 
 export default function Note({item, onPress}) {

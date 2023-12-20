@@ -1,23 +1,26 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useEffect, useState} from 'react'
-// import { StyleSheet, Text, View } from 'react-native'
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
-const NoteContext = createContext()
+const NoteContext = createContext();
+const NoteProvider = ({ children }) => {
+  const [notes, setNotes] = useState([]);
 
-export default function NoteProvider({children}) {
-    const [notes,setNotes] = useState([]);
-    const findNotes = async () => {
-        const result = await AsyncStorage.getItem('notes');
-        // console.log('result is', result);
-        if(result !== null) setNotes(JSON.parse(result));
-      }
-      useEffect(()=>{
-          findNotes();
-          
-      },[]);
-    return (
-    <NoteContext.Provider value={{notes, setNotes, findNotes}}>
-        {children}
+  const findNotes = async () => {
+    const result = await AsyncStorage.getItem('notes');
+    if (result !== null) setNotes(JSON.parse(result));
+  };
+
+  useEffect(() => {
+    findNotes();
+  }, []);
+
+  return (
+    <NoteContext.Provider value={{ notes, setNotes, findNotes }}>
+      {children}
     </NoteContext.Provider>
-  )
-}
+  );
+};
+
+export const useNotes = () => useContext(NoteContext);
+
+export default NoteProvider;

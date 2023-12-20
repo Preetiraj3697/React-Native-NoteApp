@@ -7,31 +7,29 @@ import RoundIConBtn from '../RoundIConBtn';
 import NoteInputModal from '../NoteInputModal';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Note from '../Note';
-
+import { useNotes } from '../context/NoteProvider';
 
 
 export default function NoteScreen({user, navigation}) {
     const [greet,setGreet] = useState('Evening');
     const [modalVisible, setModalVisible] =useState(false);
+    const {notes, setNotes} = useNotes();
     
     const findGreet = () => {
-        const hrs = new Date().getHours();
-        console.log(hrs);
-        if(hrs === 0 || hrs < 12) return setGreet("Morning");
-        if(hrs === 1 || hrs < 12) return setGreet("Afternoon");
-        setGreet("Evening");
+      const hrs = new Date().getHours();
+      if (hrs === 0 || hrs < 12) return setGreet('Morning');
+      if (hrs === 1 || hrs < 17) return setGreet('Afternoon');
+      setGreet('Evening');
     }
     useEffect(()=>{
       findGreet();
-      
   },[]);
     
     const hanldeOnSubmit = async (title, desc) => {
-     const time = new Date().getTime();
-     const note = {id:Date.now(),title,desc, time};
-     const updatedNotes = [...notes, note];
-     setNotes(updatedNotes);
-     await AsyncStorage.setItem("notes",JSON.stringify(updatedNotes));
+      const note = { id: Date.now(), title, desc, time: Date.now() };
+      const updatedNotes = [...notes, note];
+      setNotes(updatedNotes);
+      await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
     }
     const openNote = note => {
       navigation.navigate('NoteDetails', { note });

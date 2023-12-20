@@ -1,31 +1,43 @@
 import { Keyboard, Modal, StatusBar, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from 'react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import colors from './misc/colors';
 import RoundIConBtn from './RoundIConBtn';
 
 export default function NoteInputModal({visible, onClose, onSubmit, note, isEdit}) {
-    const [title,setTitle] = useState('');
+    const [title, setTitle] = useState('');
     const [desc ,setDesc] = useState('');
 
     const handleModalClose = () => {
          Keyboard.dismiss();
     }
+    useEffect(()=>{
+    if(isEdit){
+      setTitle(note.title);
+      setDesc(note.desc);
+    }
+    },[isEdit])
     const handleOnChangeText = (text, valueFor) => {
         if (valueFor === 'title') setTitle(text);
         if (valueFor === 'desc') setDesc(text);
     }
-    console.log(title,desc);
+    // console.log(title,desc);
     const handleSubmit = () => {
         if (!title.trim() && !desc.trim()) return onClose();
-        onSubmit(title,desc);
-        setTitle('');
-        setDesc('');
+        if(isEdit){
+          onSubmit(title, desc, Date.now());
+        }else{
+          onSubmit(title,desc);
+          setTitle('');
+          setDesc('');
+        }
         onClose();
     }
     const closeModal = () => {
+      if (!isEdit) {
         setTitle('');
         setDesc('');
-        onClose();
+      }
+      onClose();
     }
   return (
     <>
