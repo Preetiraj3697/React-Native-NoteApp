@@ -1,11 +1,13 @@
 import { StyleSheet, Text, TextInput, View } from 'react-native'
+import {AntDesign} from '@expo/vector-icons'
 import React from 'react'
 import colors from './misc/colors'
 
-export default function SearchBar({containerStyle}) {
+export default function SearchBar({containerStyle, value, onClear, onChangeText}) {
   return (
     <View style={[styles.container, {...containerStyle}]}>
-      <TextInput style={styles.searchBar} placeholder='Search me'/>
+      <TextInput value={value} onChangeText={onChangeText} style={styles.searchBar} placeholder='Search me'/>
+      {value ? <AntDesign name='close' size={20} color={colors.PRIMARY} onPress={onClear} style={styles.clearIcon} /> : null}
     </View>
   )
 }

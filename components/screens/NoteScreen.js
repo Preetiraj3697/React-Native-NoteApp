@@ -1,71 +1,147 @@
-import { StatusBar } from 'expo-status-bar'
-import { FlatList, Keyboard, StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native'
-import colors from '../misc/colors'
-import { useEffect, useState } from 'react'
-import SearchBar from '../SearchBar';
-import RoundIConBtn from '../RoundIConBtn';
-import NoteInputModal from '../NoteInputModal';
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import Note from '../Note';
-import { useNotes } from '../context/NoteProvider';
+import { StatusBar } from "expo-status-bar";
+import {
+  FlatList,
+  Keyboard,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import colors from "../misc/colors";
+import { useEffect, useState } from "react";
+import SearchBar from "../SearchBar";
+import RoundIConBtn from "../RoundIConBtn";
+import NoteInputModal from "../NoteInputModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Note from "../Note";
+import { useNotes } from "../context/NoteProvider";
+import NotFound from "../NotFound";
 
+const reverseData = data => {
+  return data.sort((a, b) => {
+    const aInt = parseInt(a.time);
+    const bInt = parseInt(b.time);
+    if (aInt < bInt) return 1;
+    if (aInt == bInt) return 0;
+    if (aInt > bInt) return -1;
+  });
+};
 
-export default function NoteScreen({user, navigation}) {
-    const [greet,setGreet] = useState('Evening');
-    const [modalVisible, setModalVisible] =useState(false);
-    const {notes, setNotes} = useNotes();
-    
-    const findGreet = () => {
-      const hrs = new Date().getHours();
-      if (hrs === 0 || hrs < 12) return setGreet('Morning');
-      if (hrs === 1 || hrs < 17) return setGreet('Afternoon');
-      setGreet('Evening');
+export default function NoteScreen({ user, navigation }) {
+  const [greet, setGreet] = useState("Evening");
+  const [modalVisible, setModalVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const { notes, setNotes, findNotes } = useNotes();
+  const [resultNotFound, setResultNotFound] = useState(false);
+
+  const findGreet = () => {
+    const hrs = new Date().getHours();
+    if (hrs === 0 || hrs < 12) return setGreet("Morning");
+    if (hrs === 1 || hrs < 17) return setGreet("Afternoon");
+    setGreet("Evening");
+  };
+  useEffect(() => {
+    findGreet();
+  }, []);
+
+  const reverseNotes = reverseData(notes);
+
+  const hanldeOnSubmit = async (title, desc) => {
+    const note = { id: Date.now(), title, desc, time: Date.now() };
+    const updatedNotes = [...notes, note];
+    setNotes(updatedNotes);
+    await AsyncStorage.setItem("notes", JSON.stringify(updatedNotes));
+  };
+  const openNote = (note) => {
+    navigation.navigate("NoteDetails", { note });
+  };
+  const handleOnSearchMethod = async (text) => {
+    setSearchQuery(text);
+    if (!text.trim()) {
+      setSearchQuery("");
+      setResultNotFound(false);
+      return await findNotes();
     }
-    useEffect(()=>{
-      findGreet();
-  },[]);
-    
-    const hanldeOnSubmit = async (title, desc) => {
-      const note = { id: Date.now(), title, desc, time: Date.now() };
-      const updatedNotes = [...notes, note];
-      setNotes(updatedNotes);
-      await AsyncStorage.setItem('notes', JSON.stringify(updatedNotes));
+    const filteredNotes = notes.filter((note) => {
+      if (note.title.toLowerCase().includes(text.toLowerCase())) {
+        return note;
+      }
+    });
+
+    if (filteredNotes.length) {
+      setNotes([...filteredNotes]);
+    } else {
+      setResultNotFound(true);
     }
-    const openNote = note => {
-      navigation.navigate('NoteDetails', { note });
-    };
+  };
+  const handleOnClear = async () => {
+    setSearchQuery('');
+    setResultNotFound(false);
+    await findNotes();
+  }
   return (
     <>
-    <StatusBar barStyle="dark-content" backgroundColor={colors.LIGHT}/>
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-    <View style={styles.container}>
-      <Text style={styles.header}>{`Good ${greet} ${user.name}`}</Text>
-      {notes.length? <SearchBar containerStyle={{marginVertical:15}} /> : null}
-      <FlatList data={notes} 
-      numColumns={2}
-      columnWrapperStyle={{justifyContent:'space-between', marginBottom:15}}
-      keyExtractor={item => item.id.toString()}
-      renderItem={({item}) => <Note item={item} onPress={() => openNote(item)}/> } />
-      {!notes.length ? (
-        <View  style={[
-          StyleSheet.absoluteFillObject,
-          styles.emptyHeaderContainer,
-        ]}>
-  <Text style={styles.emptyHeader}>Add Notes</Text>
-</View>
-      ): null}
-    </View>
-    </TouchableWithoutFeedback>
-    <RoundIConBtn onPress={() => setModalVisible(true)} antIconName="plus" style={styles.addBtn} />
-    <NoteInputModal visible={modalVisible} onClose={() => setModalVisible(false)} onSubmit={hanldeOnSubmit}/>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.LIGHT} />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <Text style={styles.header}>{`Good ${greet} ${user.name}`}</Text>
+
+          {notes.length ? (
+            <SearchBar
+              containerStyle={{ marginVertical: 15 }}
+              value={searchQuery}
+              onChangeText={handleOnSearchMethod}
+              onClear={handleOnClear}
+            />
+          ) : null}
+
+          {resultNotFound ? (
+            <NotFound />
+          ) : (
+            <FlatList
+            data={reverseNotes}
+            numColumns={2}
+            columnWrapperStyle={{
+              justifyContent: 'space-between',
+              marginBottom: 15,
+            }}
+            keyExtractor={item => item.id.toString()}
+            renderItem={({ item }) => (
+              <Note onPress={() => openNote(item)} item={item} />
+            )}
+            />
+          )}
+
+          {!notes.length ? (
+            <View
+              style={[
+                StyleSheet.absoluteFillObject,
+                styles.emptyHeaderContainer,
+              ]}
+            >
+              <Text style={styles.emptyHeader}>Add Notes</Text>
+            </View>
+          ) : null}
+        </View>
+      </TouchableWithoutFeedback>
+      <RoundIConBtn
+        onPress={() => setModalVisible(true)}
+        antIconName="plus"
+        style={styles.addBtn}
+      />
+      <NoteInputModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={hanldeOnSubmit}
+      />
     </>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   header: {
     fontSize: 25,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   container: {
     paddingHorizontal: 20,
@@ -74,18 +150,18 @@ const styles = StyleSheet.create({
   },
   emptyHeader: {
     fontSize: 30,
-    textTransform: 'uppercase',
-    fontWeight: 'bold',
+    textTransform: "uppercase",
+    fontWeight: "bold",
     opacity: 0.2,
   },
   emptyHeaderContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: -1,
   },
   addBtn: {
-    position: 'absolute',
+    position: "absolute",
     right: 15,
     bottom: 50,
     zIndex: 1,
